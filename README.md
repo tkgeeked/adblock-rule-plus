@@ -25,6 +25,8 @@
 
 ## 鸣谢
 
+- **感谢各位广告过滤规则维护大佬们的辛苦付出**
+- **感谢adblockfilters作者217heidai**
 - **原作者**：[Shadowrocket-ADBlock-Rules-Forever](https://github.com/Johnshall/Shadowrocket-ADBlock-Rules-Forever) 项目的 Moshel 和 Johnshall
 - **广告规则来源**：adblockclash 规则集
 
@@ -44,7 +46,7 @@
 
 - 最后更新：2026-04-05
 - 规则总数：约243,000行
-- 包含：广告拦截 + 国内外分流 + YouTube去广告
+- 包含：广告拦截 + 国内外IP分流 + YouTube去广告
 
 ## 注意事项
 
