@@ -1,0 +1,796 @@
+name: Auto Update AdBlock Rules
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 22 * * *"  # 每天北京时间 06:00 自动更新
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/**"
+      - "adblockplus.conf"
+
+jobs:
+  update-rules:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download latest adblock rules
+        run: |
+          echo "Downloading latest adblock rules from 217heidai..."
+          curl -sSL https://raw.githubusercontent.com/217heidai/adblockfilters/main/rules/adblockclash.list -o adblockclash_latest.list
+
+      - name: Merge all rules
+        run: |
+          python3 << 'PYEOF'
+          from datetime import datetime
+          import os
+
+          YOUTUBE_ADS_RULES = [
+              "DOMAIN-SUFFIX,ads.youtube.com,REJECT-DROP",
+              "DOMAIN-SUFFIX,adserver.imguimg.com,REJECT-DROP",
+              "DOMAIN-SUFFIX,r1---sn-4g5e6nsr.googlevideo.com,REJECT-DROP",
+              "DOMAIN-SUFFIX,r2---sn-4g5e6nsr.googlevideo.com,REJECT-DROP",
+              "DOMAIN-SUFFIX,r3---sn-4g5e6nsr.googlevideo.com,REJECT-DROP",
+              "DOMAIN-SUFFIX,r4---sn-4g5e6nsr.googlevideo.com,REJECT-DROP",
+              "DOMAIN-SUFFIX,r5---sn-4g5e6nsr.googlevideo.com,REJECT-DROP",
+              "DOMAIN-SUFFIX,r6---sn-4g5e6nsr.googlevideo.com,REJECT-DROP",
+              "DOMAIN-SUFFIX,analytics.youtube.com,REJECT-DROP",
+              "DOMAIN-SUFFIX,s.youtube.com,REJECT-DROP",
+              "DOMAIN-SUFFIX,s2.youtube.com,REJECT-DROP",
+              "DOMAIN-SUFFIX,static.doubleclick.net,REJECT-DROP",
+              "DOMAIN-SUFFIX,s0.2mdn.net,REJECT-DROP",
+              "DOMAIN-SUFFIX,v1.lscache3.c.youtube.com,REJECT-DROP",
+              "DOMAIN-SUFFIX,v2.lscache3.c.youtube.com,REJECT-DROP",
+              "DOMAIN-SUFFIX,v3.lscache3.c.youtube.com,REJECT-DROP",
+              "DOMAIN-SUFFIX,v4.lscache3.c.youtube.com,REJECT-DROP",
+              "DOMAIN-SUFFIX,v5.lscache3.c.youtube.com,REJECT-DROP",
+              "DOMAIN-SUFFIX,v6.lscache3.c.youtube.com,REJECT-DROP",
+              "DOMAIN-SUFFIX,v7.lscache3.c.youtube.com,REJECT-DROP",
+              "DOMAIN-SUFFIX,v8.lscache3.c.youtube.com,REJECT-DROP",
+          ]
+
+          DOMESTIC_DIRECT = [
+              # Apple CDN / Services
+              "DOMAIN-SUFFIX,apple.com",
+              "DOMAIN-SUFFIX,icloud.com",
+              "DOMAIN-SUFFIX,mzstatic.com",
+              "DOMAIN-SUFFIX,itunes.com",
+              "DOMAIN-SUFFIX,aaplimg.com",
+              # Financial / Banks
+              "DOMAIN-SUFFIX,unionpay.com",
+              "DOMAIN-SUFFIX,unionpaysecure.com",
+              "DOMAIN-SUFFIX,95516.com",
+              "DOMAIN-SUFFIX,icbc.com",
+              "DOMAIN-SUFFIX,icbc.com.cn",
+              "DOMAIN-SUFFIX,ccb.com",
+              "DOMAIN-SUFFIX,boc.cn",
+              "DOMAIN-SUFFIX,abchina.com",
+              "DOMAIN-SUFFIX,cmbchina.com",
+              "DOMAIN-SUFFIX,cmbimg.com",
+              "DOMAIN-SUFFIX,commbank.com.cn",
+              "DOMAIN-SUFFIX,psbc.com",
+              "DOMAIN-SUFFIX,spdb.com.cn",
+              "DOMAIN-SUFFIX,cib.com.cn",
+              "DOMAIN-SUFFIX,cebbank.com",
+              "DOMAIN-SUFFIX,gdb.com.cn",
+              "DOMAIN-SUFFIX,pingan.com",
+              "DOMAIN-SUFFIX,hxb.com.cn",
+              "DOMAIN-SUFFIX,sznsb.com.cn",
+              "DOMAIN-SUFFIX,bankofshanghai.com",
+              "DOMAIN-SUFFIX,srcb.com",
+              "DOMAIN-SUFFIX,qdccb.com",
+              # Games
+              "DOMAIN-SUFFIX,mihoyo.com",
+              "DOMAIN-SUFFIX,hoyoverse.com",
+              "DOMAIN-SUFFIX,hypergryph.com",
+              # Smart Home
+              "DOMAIN-SUFFIX,tuya.com",
+              "DOMAIN-SUFFIX,tuyacn.com",
+              "DOMAIN-SUFFIX,smartlife.com",
+              # Speed Test
+              "DOMAIN-SUFFIX,speedtest.cn",
+              
+              # ====== 原有国内直连规则 ======
+              "DOMAIN-SUFFIX,pinduoduo.com",
+              "DOMAIN-SUFFIX,yangkeduo.com",
+              "DOMAIN-SUFFIX,xunxiang.com",
+              "DOMAIN-SUFFIX,pupumall.com",
+              "DOMAIN-SUFFIX,meituan.com",
+              "DOMAIN-SUFFIX,meituan.net",
+              "DOMAIN-SUFFIX,dianping.com",
+              "DOMAIN-SUFFIX,ele.me",
+              "DOMAIN-SUFFIX,jd.com",
+              "DOMAIN-SUFFIX,jd.hk",
+              "DOMAIN-SUFFIX,taobao.com",
+              "DOMAIN-SUFFIX,tmall.com",
+              "DOMAIN-SUFFIX,alipay.com",
+              "DOMAIN-SUFFIX,alipayobjects.com",
+              "DOMAIN-SUFFIX,dingtalk.com",
+              "DOMAIN-SUFFIX,alibaba.com",
+              "DOMAIN-SUFFIX,1688.com",
+              "DOMAIN-SUFFIX,aliyuncs.com",
+              "DOMAIN-SUFFIX,alicdn.com",
+              "DOMAIN-SUFFIX,alibabadns.com",
+              "DOMAIN-SUFFIX,xiaohongshu.com",
+              "DOMAIN-SUFFIX,xhscdn.com",
+              "DOMAIN-SUFFIX,bilibili.com",
+              "DOMAIN-SUFFIX,bilivideo.com",
+              "DOMAIN-SUFFIX,hdslb.com",
+              "DOMAIN-SUFFIX,acgvideo.com",
+              "DOMAIN-SUFFIX,acg.tv",
+              "DOMAIN-SUFFIX,biliapi.net",
+              "DOMAIN-SUFFIX,biliapi.com",
+              "DOMAIN-SUFFIX,douyin.com",
+              "DOMAIN-SUFFIX,ixigua.com",
+              "DOMAIN-SUFFIX,ixiguavideo.com",
+              "DOMAIN-SUFFIX,toutiao.com",
+              "DOMAIN-SUFFIX,pstatp.com",
+              "DOMAIN-SUFFIX,snssdk.com",
+              "DOMAIN-SUFFIX,bytedance.com",
+              "DOMAIN-SUFFIX,bytedns.net",
+              "DOMAIN-SUFFIX,bytecdn.cn",
+              "DOMAIN-SUFFIX,feiliao.com",
+              "DOMAIN-SUFFIX,volccdn.com",
+              "DOMAIN-SUFFIX,feishu.cn",
+              "DOMAIN-SUFFIX,feishu.net",
+              "DOMAIN-SUFFIX,larksuite.com",
+              "DOMAIN-SUFFIX,kuaishou.com",
+              "DOMAIN-SUFFIX,yximgs.com",
+              "DOMAIN-SUFFIX,ksapisrv.com",
+              "DOMAIN-SUFFIX,kwimgs.com",
+              "DOMAIN-SUFFIX,iqiyi.com",
+              "DOMAIN-SUFFIX,iq.com",
+              "DOMAIN-SUFFIX,qiyi.com",
+              "DOMAIN-SUFFIX,youku.com",
+              "DOMAIN-SUFFIX,alibaba-inc.com",
+              "DOMAIN-SUFFIX,youkucdn.com",
+              "DOMAIN-SUFFIX,zhihu.com",
+              "DOMAIN-SUFFIX,zhimg.com",
+              "DOMAIN-SUFFIX,weibo.com",
+              "DOMAIN-SUFFIX,weibo.cn",
+              "DOMAIN-SUFFIX,weibocdn.com",
+              "DOMAIN-SUFFIX,sina.com",
+              "DOMAIN-SUFFIX,sina.com.cn",
+              "DOMAIN-SUFFIX,sina.cn",
+              "DOMAIN-SUFFIX,sinaimg.cn",
+              "DOMAIN-SUFFIX,sinajs.cn",
+              "DOMAIN-SUFFIX,baidu.com",
+              "DOMAIN-SUFFIX,baidustatic.com",
+              "DOMAIN-SUFFIX,bdstatic.com",
+              "DOMAIN-SUFFIX,bdimg.com",
+              "DOMAIN-SUFFIX,baidubce.com",
+              "DOMAIN-SUFFIX,hao123.com",
+              "DOMAIN-SUFFIX,baike.com",
+              "DOMAIN-SUFFIX,qq.com",
+              "DOMAIN-SUFFIX,gtimg.com",
+              "DOMAIN-SUFFIX,qpic.cn",
+              "DOMAIN-SUFFIX,qlogo.cn",
+              "DOMAIN-SUFFIX,tencent.com",
+              "DOMAIN-SUFFIX,tencent-cloud.com",
+              "DOMAIN-SUFFIX,tencent-cloud.net",
+              "DOMAIN-SUFFIX,tencentsuite.com",
+              "DOMAIN-SUFFIX,myqcloud.com",
+              "DOMAIN-SUFFIX,qcloud.com",
+              "DOMAIN-SUFFIX,woa.com",
+              "DOMAIN-SUFFIX,cdntips.net",
+              "DOMAIN-SUFFIX,idqqimg.com",
+              "DOMAIN-SUFFIX,sogou.com",
+              "DOMAIN-SUFFIX,sogoucdn.com",
+              "DOMAIN-SUFFIX,163.com",
+              "DOMAIN-SUFFIX,126.com",
+              "DOMAIN-SUFFIX,127.net",
+              "DOMAIN-SUFFIX,netease.com",
+              "DOMAIN-SUFFIX,netease.im",
+              "DOMAIN-SUFFIX,163yun.com",
+              "DOMAIN-SUFFIX,cloud.netease.com",
+              "DOMAIN-SUFFIX,youdao.com",
+              "DOMAIN-SUFFIX,ydstatic.com",
+              "DOMAIN-SUFFIX,mi.com",
+              "DOMAIN-SUFFIX,miui.com",
+              "DOMAIN-SUFFIX,xiaomi.com",
+              "DOMAIN-SUFFIX,xiaomiyoupin.com",
+              "DOMAIN-SUFFIX,huawei.com",
+              "DOMAIN-SUFFIX,hicloud.com",
+              "DOMAIN-SUFFIX,vmall.com",
+              "DOMAIN-SUFFIX,harmonyos.com",
+              "DOMAIN-SUFFIX,oppo.com",
+              "DOMAIN-SUFFIX,vivo.com.cn",
+              "DOMAIN-SUFFIX,ctrip.com",
+              "DOMAIN-SUFFIX,ctripcorp.com",
+              "DOMAIN-SUFFIX,c-ctrip.com",
+              "DOMAIN-SUFFIX,qunar.com",
+              "DOMAIN-SUFFIX,qunarman.com",
+              "DOMAIN-SUFFIX,didi.me",
+              "DOMAIN-SUFFIX,didiglobal.com",
+              "DOMAIN-SUFFIX,xiaojukeji.com",
+              "DOMAIN-SUFFIX,autonavi.com",
+              "DOMAIN-SUFFIX,amap.com",
+              "DOMAIN-SUFFIX,12306.cn",
+              "DOMAIN-SUFFIX,china-railway.com.cn",
+              "DOMAIN-SUFFIX,csdn.net",
+              "DOMAIN-SUFFIX,csdnimg.cn",
+              "DOMAIN-SUFFIX,gitee.com",
+              "DOMAIN-SUFFIX,jianshu.com",
+              "DOMAIN-SUFFIX,jianshu.io",
+              "DOMAIN-SUFFIX,juejin.cn",
+              "DOMAIN-SUFFIX,juejin.im",
+              "DOMAIN-SUFFIX,sspai.com",
+              "DOMAIN-SUFFIX,geekbang.org",
+              "DOMAIN-SUFFIX,geekbang.com",
+              "DOMAIN-SUFFIX,v2ex.com",
+              "DOMAIN-SUFFIX,segmentfault.com",
+              "DOMAIN-SUFFIX,sf-express.com",
+              "DOMAIN-SUFFIX,sf-express.com.cn",
+              "DOMAIN-SUFFIX,zto.com",
+              "DOMAIN-SUFFIX,yto.net.cn",
+              "DOMAIN-SUFFIX,yundaex.com",
+              "DOMAIN-SUFFIX,cainiao.com",
+              "DOMAIN-SUFFIX,cainiaoyizhan.com",
+              "DOMAIN-SUFFIX,cloudflare.com",
+              "DOMAIN-SUFFIX,dcloud.net.cn",
+              "DOMAIN-SUFFIX,beian.gov.cn",
+              "DOMAIN-SUFFIX,mydrivers.com",
+              "DOMAIN-SUFFIX,ithome.com",
+              "DOMAIN-SUFFIX,ruancan.com",
+              "DOMAIN-SUFFIX,coolapk.com",
+              "DOMAIN-SUFFIX,coolapkmarket.com",
+              "DOMAIN-SUFFIX,koudai.com",
+              "DOMAIN-SUFFIX,kaola.com",
+              "DOMAIN-SUFFIX,smzdm.com",
+              "DOMAIN-SUFFIX,zhidemai.com",
+              "DOMAIN-SUFFIX,yangshipin.cn",
+              "DOMAIN-SUFFIX,cctv.com",
+              "DOMAIN-SUFFIX,cctv.cn",
+              "DOMAIN-SUFFIX,cntv.cn",
+              "DOMAIN-SUFFIX,cctvpic.com",
+              "DOMAIN-SUFFIX,migu.cn",
+              "DOMAIN-SUFFIX,cmvideo.cn",
+              "DOMAIN-SUFFIX,wasu.cn",
+              "DOMAIN-SUFFIX,10086.cn",
+              "DOMAIN-SUFFIX,10010.com",
+              "DOMAIN-SUFFIX,189.cn",
+              "DOMAIN-SUFFIX,chinamobile.com",
+              "DOMAIN-SUFFIX,chinatelecom.com.cn",
+              "DOMAIN-SUFFIX,chinaunicom.com",
+              "DOMAIN-SUFFIX,chinaunicom.com.cn",
+              "DOMAIN-SUFFIX,kugou.com",
+              "DOMAIN-SUFFIX,kuwo.cn",
+              "DOMAIN-SUFFIX,y.qq.com",
+              "DOMAIN-SUFFIX,music.163.com",
+              "DOMAIN-SUFFIX,tianyancha.com",
+              "DOMAIN-SUFFIX,qixin.com",
+              "DOMAIN-SUFFIX,itjuzi.com",
+              "DOMAIN-SUFFIX,lagou.com",
+              "DOMAIN-SUFFIX,bosszhipin.com",
+              "DOMAIN-SUFFIX,zhipin.com",
+              "DOMAIN-SUFFIX,nowcoder.com",
+              "DOMAIN-SUFFIX,ui.cn",
+              "DOMAIN-SUFFIX,zcool.com.cn",
+              "DOMAIN-SUFFIX,huaban.com",
+              "DOMAIN-SUFFIX,dgtle.com",
+              "DOMAIN-SUFFIX,chiphell.com",
+              "DOMAIN-SUFFIX,pcbeta.com",
+              "DOMAIN-SUFFIX,deepin.org",
+              "DOMAIN-SUFFIX,ubuntukylin.com",
+              "DOMAIN-SUFFIX,uniontech.com",
+              "DOMAIN-SUFFIX,jikexueyuan.com",
+              "DOMAIN-SUFFIX,imooc.com",
+              "DOMAIN-SUFFIX,runoob.com",
+              "DOMAIN-SUFFIX,apifox.cn",
+              "DOMAIN-SUFFIX,apipost.cn",
+          ]
+
+          proxy_rules_raw = """
+          DOMAIN-SUFFIX,ampproject.org,PROXY
+          DOMAIN-SUFFIX,tedcdn.com,PROXY
+          DOMAIN-SUFFIX,t.me,PROXY
+          DOMAIN-SUFFIX,tdesktop.com,PROXY
+          DOMAIN-SUFFIX,telegra.ph,PROXY
+          DOMAIN-SUFFIX,telegram.me,PROXY
+          DOMAIN-SUFFIX,telegram.org,PROXY
+          DOMAIN-SUFFIX,telesco.pe,PROXY
+          IP-CIDR,91.108.56.0/22,PROXY
+          IP-CIDR,91.108.4.0/22,PROXY
+          IP-CIDR,91.108.8.0/22,PROXY
+          IP-CIDR,91.108.16.0/22,PROXY
+          IP-CIDR,91.108.12.0/22,PROXY
+          IP-CIDR,149.154.160.0/20,PROXY
+          IP-CIDR,91.105.192.0/23,PROXY
+          IP-CIDR,91.108.20.0/22,PROXY
+          IP-CIDR,185.76.151.0/24,PROXY
+          IP-CIDR,2001:b28:f23d::/48,PROXY
+          IP-CIDR,2001:b28:f23f::/48,PROXY
+          IP-CIDR,2001:67c:4e8::/48,PROXY
+          IP-CIDR,2001:b28:f23c::/48,PROXY
+          IP-CIDR,2a0a:f280::/32,PROXY
+          DOMAIN-SUFFIX,disquscdn.com,PROXY
+          IP-CIDR,18.194.0.0/15,PROXY
+          IP-CIDR,34.224.0.0/12,PROXY
+          DOMAIN-SUFFIX,appledaily.tw,PROXY
+          IP-CIDR,74.125.0.0/16,PROXY
+          DOMAIN-SUFFIX,www-google-analytics.l.google.com,PROXY
+          DOMAIN-SUFFIX,ssl-google-analytics.l.google.com,PROXY
+          DOMAIN-SUFFIX,partnerad.l.google.com,PROXY
+          DOMAIN-SUFFIX,pagead.l.google.com,PROXY
+          DOMAIN-SUFFIX,pagead.google.com,PROXY
+          DOMAIN-SUFFIX,pagead-tpc.l.google.com,PROXY
+          DOMAIN-SUFFIX,mobileads.google.com,PROXY
+          DOMAIN-SUFFIX,ads.google.com,PROXY
+          DOMAIN-SUFFIX,afd.l.google.com,PROXY
+          DOMAIN-SUFFIX,dowjones.com,PROXY
+          DOMAIN-SUFFIX,bcbits.com,PROXY
+          DOMAIN-SUFFIX,ogma.iad.appboy.com,PROXY
+          DOMAIN-SUFFIX,odc.officeapps.live.com,PROXY
+          DOMAIN-SUFFIX,skyapi.live.net,PROXY
+          DOMAIN-SUFFIX,centralus1.mediap.svc.ms,PROXY
+          DOMAIN-SUFFIX,dm.files.1drv.com,PROXY
+          DOMAIN-SUFFIX,mobile.pipe.aria.microsoft.com,PROXY
+          DOMAIN-SUFFIX,gate.hockeyapp.net,PROXY
+          DOMAIN-SUFFIX,api.onedrive.com,PROXY
+          DOMAIN-SUFFIX,vortex.data.microsoft.com,PROXY
+          DOMAIN-SUFFIX,mendeley.com,PROXY
+          DOMAIN-SUFFIX,news-events.apple.com,PROXY
+          DOMAIN-SUFFIX,news-edge.apple.com,PROXY
+          DOMAIN-SUFFIX,apple.comscoreresearch.com,PROXY
+          DOMAIN-SUFFIX,play.itunes.apple.com,PROXY
+          DOMAIN-SUFFIX,play-cdn.itunes-apple.com.akadns.net,PROXY
+          DOMAIN-SUFFIX,cvws.apple-dns.net,PROXY
+          DOMAIN-SUFFIX,news.apple-dns.net,PROXY
+          DOMAIN-SUFFIX,gateway.fe.apple-dns.net,PROXY
+          DOMAIN-SUFFIX,akamaiedge.net,PROXY
+          DOMAIN-SUFFIX,gs-loc.apple.com,PROXY
+          DOMAIN-SUFFIX,bag.itunes.apple.com,PROXY
+          DOMAIN-SUFFIX,apple.news,PROXY
+          DOMAIN-SUFFIX,news.iadsdk.apple.com,PROXY
+          DOMAIN-SUFFIX,raw.githubusercontent.com,PROXY
+          DOMAIN-SUFFIX,vox.com,PROXY
+          DOMAIN-SUFFIX,adcdownload.apple.com.akadns.net,PROXY
+          DOMAIN-SUFFIX,appldnld.g.aaplimg.com,PROXY
+          DOMAIN-SUFFIX,cds-cdn.v.aaplimg.com,PROXY
+          DOMAIN-SUFFIX,cds.apple.com.akadns.net,PROXY
+          DOMAIN-SUFFIX,cl1-cdn.origin-apple.com.akadns.net,PROXY
+          DOMAIN-SUFFIX,cl3-cdn.origin-apple.com.akadns.net,PROXY
+          DOMAIN-SUFFIX,cl4-cdn.origin-apple.com.akadns.net,PROXY
+          DOMAIN-SUFFIX,cl5-cdn.origin-apple.com.akadns.net,PROXY
+          DOMAIN-SUFFIX,clientflow.apple.com.akadns.net,PROXY
+          DOMAIN-SUFFIX,configuration.apple.com.akadns.net,PROXY
+          DOMAIN-SUFFIX,dd-cdn.origin-apple.com.akadns.net,PROXY
+          DOMAIN-SUFFIX,cdn.apple-mapkit.com,PROXY
+          DOMAIN-SUFFIX,gspe19-cn.ls-apple.com.akadns.net,PROXY
+          DOMAIN-SUFFIX,gs-loc-cn.apple.com,PROXY
+          DOMAIN-SUFFIX,icloud-cdn.icloud.com.akadns.net,PROXY
+          DOMAIN-SUFFIX,init-p01md-lb.push-apple.com.akadns.net,PROXY
+          DOMAIN-SUFFIX,init-p01st-lb.push-apple.com.akadns.net,PROXY
+          DOMAIN-SUFFIX,init-s01st-lb.push-apple.com.akadns.net,PROXY
+          DOMAIN-SUFFIX,itunes-apple.com.akadns.net,PROXY
+          DOMAIN-SUFFIX,mesu-china.apple.com.akadns.net,PROXY
+          DOMAIN-SUFFIX,mesu-cdn.apple.com.akadns.net,PROXY
+          DOMAIN-SUFFIX,ocsp-lb.apple.com.akadns.net,PROXY
+          DOMAIN-SUFFIX,oscdn.origin-apple.com.akadns.net,PROXY
+          DOMAIN-SUFFIX,pancake.cdn-apple.com.akadns.net,PROXY
+          DOMAIN-SUFFIX,prod-support.apple-support.akadns.net,PROXY
+          DOMAIN-SUFFIX,stocks-sparkline-lb.apple.com.akadns.net,PROXY
+          DOMAIN-SUFFIX,store.storeimages.apple.com.akadns.net,PROXY
+          DOMAIN-SUFFIX,support-china.apple-support.akadns.net,PROXY
+          DOMAIN-SUFFIX,swcatalog-cdn.apple.com.akadns.net,PROXY
+          DOMAIN-SUFFIX,swdist.apple.com.akadns.net,PROXY
+          DOMAIN-SUFFIX,swscan-cdn.apple.com.akadns.net,PROXY
+          DOMAIN-SUFFIX,valid.origin-apple.com.akadns.net,PROXY
+          DOMAIN-SUFFIX,phobos.apple.com,PROXY
+          DOMAIN-SUFFIX,disney.asia,PROXY
+          DOMAIN-SUFFIX,disney.be,PROXY
+          DOMAIN-SUFFIX,disney.bg,PROXY
+          DOMAIN-SUFFIX,disney.ca,PROXY
+          DOMAIN-SUFFIX,disney.ch,PROXY
+          DOMAIN-SUFFIX,disney.co.il,PROXY
+          DOMAIN-SUFFIX,disney.co.jp,PROXY
+          DOMAIN-SUFFIX,disney.co.kr,PROXY
+          DOMAIN-SUFFIX,disney.co.th,PROXY
+          DOMAIN-SUFFIX,disney.co.uk,PROXY
+          DOMAIN-SUFFIX,disney.co.za,PROXY
+          DOMAIN-SUFFIX,disney.com,PROXY
+          DOMAIN-SUFFIX,disney.com.au,PROXY
+          DOMAIN-SUFFIX,disney.com.br,PROXY
+          DOMAIN-SUFFIX,disney.com.hk,PROXY
+          DOMAIN-SUFFIX,disney.com.tw,PROXY
+          DOMAIN-SUFFIX,disney.cz,PROXY
+          DOMAIN-SUFFIX,disney.de,PROXY
+          DOMAIN-SUFFIX,disney.dk,PROXY
+          DOMAIN-SUFFIX,disney.es,PROXY
+          DOMAIN-SUFFIX,disney.fi,PROXY
+          DOMAIN-SUFFIX,disney.fr,PROXY
+          DOMAIN-SUFFIX,disney.gr,PROXY
+          DOMAIN-SUFFIX,disney.hu,PROXY
+          DOMAIN-SUFFIX,disney.id,PROXY
+          DOMAIN-SUFFIX,disney.in,PROXY
+          DOMAIN-SUFFIX,disney.io,PROXY
+          DOMAIN-SUFFIX,disney.it,PROXY
+          DOMAIN-SUFFIX,disney.my,PROXY
+          DOMAIN-SUFFIX,disney.nl,PROXY
+          DOMAIN-SUFFIX,disney.no,PROXY
+          DOMAIN-SUFFIX,disney.ph,PROXY
+          DOMAIN-SUFFIX,disney.pl,PROXY
+          DOMAIN-SUFFIX,disney.pt,PROXY
+          DOMAIN-SUFFIX,disney.ro,PROXY
+          DOMAIN-SUFFIX,disney.ru,PROXY
+          DOMAIN-SUFFIX,disney.se,PROXY
+          DOMAIN-SUFFIX,disney.sg,PROXY
+          DOMAIN-SUFFIX,20thcenturystudios.com.au,PROXY
+          DOMAIN-SUFFIX,20thcenturystudios.com.br,PROXY
+          DOMAIN-SUFFIX,20thcenturystudios.jp,PROXY
+          DOMAIN-SUFFIX,adventuresbydisney.com,PROXY
+          DOMAIN-SUFFIX,babble.com,PROXY
+          DOMAIN-SUFFIX,babyzone.com,PROXY
+          DOMAIN-SUFFIX,bamgrid.com,PROXY
+          DOMAIN-SUFFIX,beautyandthebeastmusical.co.uk,PROXY
+          DOMAIN-SUFFIX,dilcdn.com,PROXY
+          DOMAIN-SUFFIX,disney-asia.com,PROXY
+          DOMAIN-SUFFIX,disney-discount.com,PROXY
+          DOMAIN-SUFFIX,disney-plus.net,PROXY
+          DOMAIN-SUFFIX,disney-portal.my.onetrust.com,PROXY
+          DOMAIN-SUFFIX,disney-studio.com,PROXY
+          DOMAIN-SUFFIX,disney-studio.net,PROXY
+          DOMAIN-SUFFIX,disney.my.sentry.io,PROXY
+          DOMAIN-SUFFIX,disneyadsales.com,PROXY
+          DOMAIN-SUFFIX,disneyarena.com,PROXY
+          DOMAIN-SUFFIX,disneyaulani.com,PROXY
+          DOMAIN-SUFFIX,disneybaby.com,PROXY
+          DOMAIN-SUFFIX,disneycareers.com,PROXY
+          DOMAIN-SUFFIX,disneychannelonstage.com,PROXY
+          DOMAIN-SUFFIX,disneychannelroadtrip.com,PROXY
+          DOMAIN-SUFFIX,disneycruisebrasil.com,PROXY
+          DOMAIN-SUFFIX,disneyenconcert.com,PROXY
+          DOMAIN-SUFFIX,disneyiejobs.com,PROXY
+          DOMAIN-SUFFIX,disneyinflight.com,PROXY
+          DOMAIN-SUFFIX,disneyinternational.com,PROXY
+          DOMAIN-SUFFIX,disneyinternationalhd.com,PROXY
+          DOMAIN-SUFFIX,disneyjunior.com,PROXY
+          DOMAIN-SUFFIX,disneyjuniortreataday.com,PROXY
+          DOMAIN-SUFFIX,disneylatino.com,PROXY
+          DOMAIN-SUFFIX,disneymagicmoments.co.il,PROXY
+          DOMAIN-SUFFIX,disneymagicmoments.co.uk,PROXY
+          DOMAIN-SUFFIX,disneymagicmoments.co.za,PROXY
+          DOMAIN-SUFFIX,disneymagicmoments.de,PROXY
+          DOMAIN-SUFFIX,disneymagicmoments.es,PROXY
+          DOMAIN-SUFFIX,disneymagicmoments.fr,PROXY
+          DOMAIN-SUFFIX,disneymagicmoments.gen.tr,PROXY
+          DOMAIN-SUFFIX,disneymagicmoments.gr,PROXY
+          DOMAIN-SUFFIX,disneymagicmoments.it,PROXY
+          DOMAIN-SUFFIX,disneymagicmomentsme.com,PROXY
+          DOMAIN-SUFFIX,disneyme.com,PROXY
+          DOMAIN-SUFFIX,disneymeetingsandevents.com,PROXY
+          DOMAIN-SUFFIX,disneymovieinsiders.com,PROXY
+          DOMAIN-SUFFIX,disneymusicpromotion.com,PROXY
+          DOMAIN-SUFFIX,disneynewseries.com,PROXY
+          DOMAIN-SUFFIX,disneynow.com,PROXY
+          DOMAIN-SUFFIX,disneypeoplesurveys.com,PROXY
+          DOMAIN-SUFFIX,disneyplus.bn5x.net,PROXY
+          DOMAIN-SUFFIX,disneyplus.com,PROXY
+          DOMAIN-SUFFIX,disneyplus.com.ssl.sc.omtrdc.net,PROXY
+          DOMAIN-SUFFIX,disneyredirects.com,PROXY
+          DOMAIN-SUFFIX,disneysrivieraresort.com,PROXY
+          DOMAIN-SUFFIX,disneystore.com,PROXY
+          DOMAIN-SUFFIX,disneystreaming.com,PROXY
+          DOMAIN-SUFFIX,disneysubscription.com,PROXY
+          DOMAIN-SUFFIX,disneytickets.co.uk,PROXY
+          DOMAIN-SUFFIX,disneyturkiye.com.tr,PROXY
+          DOMAIN-SUFFIX,disneytvajobs.com,PROXY
+          DOMAIN-SUFFIX,disneyworld-go.com,PROXY
+          DOMAIN-SUFFIX,dssott.com,PROXY
+          DOMAIN-SUFFIX,go-disneyworldgo.com,PROXY
+          DOMAIN-SUFFIX,go.com,PROXY
+          DOMAIN-SUFFIX,mickey.tv,PROXY
+          DOMAIN-SUFFIX,moviesanywhere.com,PROXY
+          DOMAIN-SUFFIX,nomadlandmovie.ch,PROXY
+          DOMAIN-SUFFIX,playmation.com,PROXY
+          DOMAIN-SUFFIX,shopdisney.com,PROXY
+          DOMAIN-SUFFIX,shops-disney.com,PROXY
+          DOMAIN-SUFFIX,sorcerersarena.com,PROXY
+          DOMAIN-SUFFIX,spaindisney.com,PROXY
+          DOMAIN-SUFFIX,star-brasil.com,PROXY
+          DOMAIN-SUFFIX,star-latam.com,PROXY
+          DOMAIN-SUFFIX,starwars.com,PROXY
+          DOMAIN-SUFFIX,starwarsgalacticstarcruiser.com,PROXY
+          DOMAIN-SUFFIX,starwarskids.com,PROXY
+          DOMAIN-SUFFIX,streamingdisney.net,PROXY
+          DOMAIN-SUFFIX,thestationbymaker.com,PROXY
+          DOMAIN-SUFFIX,thisispolaris.com,PROXY
+          DOMAIN-SUFFIX,watchdisneyfe.com,PROXY
+          DOMAIN-SUFFIX,a2z.com,PROXY
+          DOMAIN-SUFFIX,aboutamazon.co.uk,PROXY
+          DOMAIN-SUFFIX,aboutamazon.com,PROXY
+          DOMAIN-SUFFIX,aboutamazon.com.au,PROXY
+          DOMAIN-SUFFIX,aboutamazon.de,PROXY
+          DOMAIN-SUFFIX,aboutamazon.es,PROXY
+          DOMAIN-SUFFIX,aboutamazon.eu,PROXY
+          DOMAIN-SUFFIX,aboutamazon.fr,PROXY
+          DOMAIN-SUFFIX,aboutamazon.in,PROXY
+          DOMAIN-SUFFIX,aboutamazon.it,PROXY
+          DOMAIN-SUFFIX,aboutamazon.jp,PROXY
+          DOMAIN-SUFFIX,aboutamazon.pl,PROXY
+          DOMAIN-SUFFIX,acmvalidations.com,PROXY
+          DOMAIN-SUFFIX,acmvalidationsaws.com,PROXY
+          DOMAIN-SUFFIX,aesworkshops.com,PROXY
+          DOMAIN-SUFFIX,aiv-cdn.net,PROXY
+          DOMAIN-SUFFIX,aiv-delivery.net,PROXY
+          DOMAIN-SUFFIX,alexa.com,PROXY
+          DOMAIN-SUFFIX,amaaozn.com,PROXY
+          DOMAIN-KEYWORD,amazon,PROXY
+          DOMAIN-SUFFIX,amazon-adsystem.com,PROXY
+          DOMAIN-SUFFIX,amazon-fashions.com,PROXY
+          DOMAIN-SUFFIX,amazon-jp-recruiting.com,PROXY
+          DOMAIN-SUFFIX,amazon-lantern.com,PROXY
+          DOMAIN-SUFFIX,amazon-launchpad.com,PROXY
+          DOMAIN-SUFFIX,amazon.ae,PROXY
+          DOMAIN-SUFFIX,amazon.ca,PROXY
+          DOMAIN-SUFFIX,amazon.co.jp,PROXY
+          DOMAIN-SUFFIX,amazon.co.uk,PROXY
+          DOMAIN-SUFFIX,amazon.com,PROXY
+          DOMAIN-SUFFIX,amazon.com.au,PROXY
+          DOMAIN-SUFFIX,amazon.com.br,PROXY
+          DOMAIN-SUFFIX,amazon.com.mx,PROXY
+          DOMAIN-SUFFIX,amazon.com.tr,PROXY
+          DOMAIN-SUFFIX,amazon.de,PROXY
+          DOMAIN-SUFFIX,amazon.es,PROXY
+          DOMAIN-SUFFIX,amazon.fr,PROXY
+          DOMAIN-SUFFIX,amazon.in,PROXY
+          DOMAIN-SUFFIX,amazon.it,PROXY
+          DOMAIN-SUFFIX,amazon.jobs,PROXY
+          DOMAIN-SUFFIX,amazon.jp,PROXY
+          DOMAIN-SUFFIX,amazon.nl,PROXY
+          DOMAIN-SUFFIX,amazon.red,PROXY
+          DOMAIN-SUFFIX,amazon.sg,PROXY
+          DOMAIN-SUFFIX,amazonalexavoxcon.com,PROXY
+          DOMAIN-SUFFIX,amazonauthorinsights.com,PROXY
+          DOMAIN-SUFFIX,amazonaws-china.com,PROXY
+          DOMAIN-SUFFIX,amazonaws.co.uk,PROXY
+          DOMAIN-SUFFIX,amazonaws.com,PROXY
+          DOMAIN-SUFFIX,amazonaws.tv,PROXY
+          DOMAIN-SUFFIX,amazonbusiness.org,PROXY
+          DOMAIN-SUFFIX,amazonbusinessblog.com,PROXY
+          DOMAIN-SUFFIX,amazondevicesupport.com,PROXY
+          DOMAIN-SUFFIX,amazonfctours.com,PROXY
+          DOMAIN-SUFFIX,amazonianblog.com,PROXY
+          DOMAIN-SUFFIX,amazonimages.com,PROXY
+          DOMAIN-SUFFIX,amazonlaunchpad.com,PROXY
+          DOMAIN-SUFFIX,amazonliterarypartnership.com,PROXY
+          DOMAIN-SUFFIX,amazonlumberyard.wang,PROXY
+          DOMAIN-SUFFIX,amazonpay.com,PROXY
+          DOMAIN-SUFFIX,amazonpay.in,PROXY
+          DOMAIN-SUFFIX,amazonprimevideos.com,PROXY
+          DOMAIN-SUFFIX,amazonsdi.com,PROXY
+          DOMAIN-SUFFIX,amazonstudiosguilds.com,PROXY
+          DOMAIN-SUFFIX,amazontrust.com,PROXY
+          DOMAIN-SUFFIX,amazonuniversity.jobs,PROXY
+          DOMAIN-SUFFIX,amazonvideo.cc,PROXY
+          DOMAIN-SUFFIX,amazonvideo.com,PROXY
+          DOMAIN-SUFFIX,amazonvideodirect.com,PROXY
+          DOMAIN-SUFFIX,amazonworkdocs.com,PROXY
+          DOMAIN-SUFFIX,amplifyapp.com,PROXY
+          DOMAIN-SUFFIX,amplifyframework.com,PROXY
+          DOMAIN-SUFFIX,amzn.asia,PROXY
+          DOMAIN-SUFFIX,amzn.com,PROXY
+          DOMAIN-SUFFIX,amzn.to,PROXY
+          DOMAIN-SUFFIX,amznl.com,PROXY
+          DOMAIN-SUFFIX,associates-amazon.com,PROXY
+          DOMAIN-SUFFIX,audible.com,PROXY
+          DOMAIN-SUFFIX,avodmp4s3ww-a.akamaihd.net,PROXY
+          DOMAIN-KEYWORD,aws,PROXY
+          DOMAIN-SUFFIX,aws-iot-hackathon.com,PROXY
+          DOMAIN-SUFFIX,awsautopilot.com,PROXY
+          DOMAIN-SUFFIX,awsautoscaling.com,PROXY
+          DOMAIN-SUFFIX,awsbraket.com,PROXY
+          DOMAIN-SUFFIX,awscloud.com,PROXY
+          DOMAIN-SUFFIX,awscommandlineinterface.com,PROXY
+          DOMAIN-SUFFIX,awsedstart.com,PROXY
+          DOMAIN-SUFFIX,awseducate.com,PROXY
+          DOMAIN-SUFFIX,awseducate.net,PROXY
+          DOMAIN-SUFFIX,awseducate.org,PROXY
+          DOMAIN-SUFFIX,awsloft-johannesburg.com,PROXY
+          DOMAIN-SUFFIX,awsloft-stockholm.com,PROXY
+          DOMAIN-SUFFIX,awssecworkshops.com,PROXY
+          DOMAIN-SUFFIX,awsstatic.com,PROXY
+          DOMAIN-SUFFIX,awsthinkbox.com,PROXY
+          DOMAIN-SUFFIX,awstrack.me,PROXY
+          DOMAIN-SUFFIX,awstrust.com,PROXY
+          DOMAIN-SUFFIX,boxofficemojo.com,PROXY
+          DOMAIN-SUFFIX,cdkworkshop.com,PROXY
+          DOMAIN-SUFFIX,cloudfront.net,PROXY
+          DOMAIN-SUFFIX,containersonaws.com,PROXY
+          DOMAIN-SUFFIX,createspace.com,PROXY
+          DOMAIN-SUFFIX,elasticbeanstalk.com,PROXY
+          DOMAIN-SUFFIX,gameon-masters.com,PROXY
+          DOMAIN-SUFFIX,gdansk-amazon.com,PROXY
+          DOMAIN-SUFFIX,images-amazon.com,PROXY
+          DOMAIN-SUFFIX,imdb.com,PROXY
+          DOMAIN-SUFFIX,imdb.to,PROXY
+          DOMAIN-SUFFIX,kindle.co.jp,PROXY
+          DOMAIN-SUFFIX,kindle.co.uk,PROXY
+          DOMAIN-SUFFIX,kindle.com,PROXY
+          DOMAIN-SUFFIX,kindle.de,PROXY
+          DOMAIN-SUFFIX,kindle.es,PROXY
+          DOMAIN-SUFFIX,kindle.fr,PROXY
+          DOMAIN-SUFFIX,kindle.in,PROXY
+          DOMAIN-SUFFIX,kindle.it,PROXY
+          DOMAIN-SUFFIX,kindle.jp,PROXY
+          DOMAIN-SUFFIX,kindleoasis.com,PROXY
+          DOMAIN-SUFFIX,kindleoasis.info,PROXY
+          DOMAIN-SUFFIX,kindleoasis.jp,PROXY
+          DOMAIN-SUFFIX,kindleoasis.org,PROXY
+          DOMAIN-SUFFIX,kindleoasis.us,PROXY
+          DOMAIN-SUFFIX,kindleoasisnews.com,PROXY
+          DOMAIN-SUFFIX,kindleproject.com,PROXY
+          DOMAIN-SUFFIX,llnwd.net,PROXY
+          DOMAIN-SUFFIX,media-amazon.com,PROXY
+          DOMAIN-SUFFIX,media-imdb.com,PROXY
+          DOMAIN-SUFFIX,prime-video.com,PROXY
+          DOMAIN-SUFFIX,primeday.info,PROXY
+          DOMAIN-SUFFIX,primevideo.cc,PROXY
+          DOMAIN-SUFFIX,primevideo.com,PROXY
+          DOMAIN-SUFFIX,primevideo.info,PROXY
+          DOMAIN-SUFFIX,primevideo.org,PROXY
+          DOMAIN-SUFFIX,primevideo.tv,PROXY
+          DOMAIN-SUFFIX,pv-cdn.net,PROXY
+          DOMAIN-SUFFIX,siege-amazon.com,PROXY
+          DOMAIN-SUFFIX,ssl-images-amazon.com,PROXY
+          DOMAIN-SUFFIX,thinkboxsoftware.com,PROXY
+          DOMAIN-SUFFIX,ueberamazon.de,PROXY
+          DOMAIN-SUFFIX,wfm.com,PROXY
+          DOMAIN-SUFFIX,wholecitiesfoundation.org,PROXY
+          DOMAIN-SUFFIX,wholefoods.com,PROXY
+          DOMAIN-SUFFIX,wholefoodsmarket.co.uk,PROXY
+          DOMAIN-SUFFIX,wholefoodsmarket.com,PROXY
+          DOMAIN-SUFFIX,wholekidsfoundation.org,PROXY
+          DOMAIN-SUFFIX,wholeplanetfoundation.org,PROXY
+          DOMAIN-SUFFIX,yamaxun.com,PROXY
+          DOMAIN-SUFFIX,paramountplus.com,PROXY
+          DOMAIN-SUFFIX,bing.com,PROXY
+          DOMAIN-SUFFIX,dnsleaktest.com,PROXY
+          DOMAIN-SUFFIX,ipleak.net,PROXY
+          DOMAIN-SUFFIX,browserleaks.com,PROXY
+          DOMAIN-SUFFIX,browserleaks.org,PROXY
+          DOMAIN-SUFFIX,vpnunlimited.com,PROXY
+          DOMAIN-SUFFIX,whrq.net,PROXY
+          DOMAIN-SUFFIX,forefront.ai,PROXY
+          DOMAIN-SUFFIX,mozilla.org,PROXY
+          DOMAIN-SUFFIX,txt.fyi,PROXY
+          DOMAIN-SUFFIX,adobe.com,PROXY
+          DOMAIN-SUFFIX,aol.com,PROXY
+          DOMAIN-SUFFIX,yahoo.com,PROXY
+          DOMAIN-SUFFIX,linkedin.cn,PROXY
+          DOMAIN-SUFFIX,linkedin.com,PROXY
+          DOMAIN-SUFFIX,copilot.microsoft.com,PROXY
+          DOMAIN-SUFFIX,hoyolab.com,PROXY
+          DOMAIN-SUFFIX,location.microsoft.com,PROXY
+          DOMAIN-SUFFIX,devv.ai,PROXY
+          DOMAIN-SUFFIX,ba-jp-sdk.bluearchive.jp,PROXY
+          DOMAIN-SUFFIX,resources.download.minecraft.net,PROXY
+          DOMAIN-SUFFIX,piston-data.mojang.com,PROXY
+          DOMAIN-SUFFIX,github.dev,PROXY
+          DOMAIN-SUFFIX,mc-heads.net,PROXY
+          DOMAIN-SUFFIX,apt.thebigboss.org,PROXY
+          DOMAIN-SUFFIX,repo.chariz.com,PROXY
+          """
+
+          PROXY_RULES = [r.strip() for r in proxy_rules_raw.strip().split('\n') if r.strip() and not r.strip().startswith('#')]
+
+          # 1. Parse adblock rules
+          print("Parsing adblock rules...")
+          ad_domains = set()
+          with open('adblockclash_latest.list', 'r', encoding='utf-8') as f:
+              for line in f:
+                  line = line.strip()
+                  if line.startswith('DOMAIN-SUFFIX,') and line.endswith(',REJECT-DROP'):
+                      parts = line.split(',')
+                      if len(parts) == 3:
+                          ad_domains.add(parts[1])
+
+          print(f"  Found {len(ad_domains):,} ad rules")
+
+          # 2. Optimize ad rules
+          print("Optimizing ad rules...")
+          optimized_ad = []
+          domain_set = ad_domains
+          for domain in sorted(domain_set):
+              parts = domain.split('.')
+              is_redundant = False
+              for i in range(1, len(parts)):
+                  parent = '.'.join(parts[i:])
+                  if parent in domain_set and parent != domain:
+                      is_redundant = True
+                      break
+              if not is_redundant:
+                  optimized_ad.append(f"DOMAIN-SUFFIX,{domain},REJECT-DROP")
+
+          skipped = len(domain_set) - len(optimized_ad)
+          print(f"  Optimized to {len(optimized_ad):,} (removed {skipped} redundant)")
+
+          # 3. Write merged file
+          print("Writing merged config...")
+          with open('adblockplus.conf', 'w', encoding='utf-8') as f:
+              f.write(f"# Shadowrocket AdBlock Plus: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+              f.write(f"# 广告拦截 + 国内外分流 + YouTube去广告\n")
+              f.write(f"# 广告规则来源: 217heidai/adblockfilters\n")
+              f.write(f"# 分流规则来源: Johnshall/Shadowrocket-ADBlock-Rules-Forever\n")
+              f.write(f"# 自动更新: GitHub Actions 每天 06:30 北京时间\n")
+              f.write(f"\n")
+              f.write(f"[General]\n")
+              f.write(f"bypass-system = true\n")
+              f.write(f"skip-proxy = 192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12, localhost, *.local, captive.apple.com, e.crashlytics.com\n")
+              f.write(f"bypass-tun = 10.0.0.0/8,100.64.0.0/10,127.0.0.0/8,169.254.0.0/16,172.16.0.0/12,192.0.0.0/24,192.0.2.0/24,192.88.99.0/24,192.168.0.0/16,198.18.0.0/15,198.51.100.0/24,203.0.113.0/24,224.0.0.0/4,255.255.255.255/32\n")
+              f.write(f"dns-server = 223.5.5.5, 119.29.29.29, system\n")
+              f.write(f"update-url = https://raw.githubusercontent.com/tkgeeked/adblock-rule-plus/main/adblockplus.conf\n")
+              f.write(f"\n")
+              f.write(f"[Rule]\n")
+
+              # ====== 国内直连规则（放在最前，避免遍历大量拦截规则导致卡顿）=======
+              f.write(f"# ====== 国内直连 - 优先匹配 ======\n")
+              f.write(f"DOMAIN-SUFFIX,cn,DIRECT\n")
+              f.write(f"DOMAIN-KEYWORD,weixin,DIRECT\n")
+              f.write(f"DOMAIN-KEYWORD,wechat,DIRECT\n")
+              f.write(f"DOMAIN-SUFFIX,weixin.qq.com,DIRECT\n")
+              f.write(f"DOMAIN-SUFFIX,wechat.com,DIRECT\n")
+              for d in DOMESTIC_DIRECT:
+                  f.write(d + ",DIRECT\n")
+              f.write(f"\n")
+
+              f.write(f"# ====== 广告拦截规则 ======\n")
+              for rule in optimized_ad:
+                  f.write(rule + '\n')
+              f.write(f"\n")
+
+              f.write(f"# ====== YouTube 去广告规则 ======\n")
+              for rule in YOUTUBE_ADS_RULES:
+                  f.write(rule + '\n')
+              f.write(f"\n")
+
+              f.write(f"# ====== 国内外分流 - 代理规则 ======\n")
+              for rule in PROXY_RULES:
+                  rule = rule.strip()
+                  if rule and not rule.startswith('#'):
+                      f.write(rule + '\n')
+              f.write(f"\n")
+
+              f.write(f"# ====== GEOIP 规则 ======\n")
+              f.write(f"GEOIP,CN,DIRECT\n")
+              f.write(f"\n")
+
+              f.write(f"# ====== 最终规则 ======\n")
+              f.write(f"FINAL,PROXY\n")
+
+              f.write(f"\n")
+              f.write(f"[URL Rewrite]\n")
+              f.write(f"^https?://(www.)?(g|google)\\.cn https://www.google.com 302\n")
+              f.write(f"\n")
+              f.write(f"[MITM]\n")
+              f.write(f"hostname = *.google.cn,*.googlevideo.com\n")
+
+          file_size = os.path.getsize('adblockplus.conf')
+          total = len(optimized_ad) + len(YOUTUBE_ADS_RULES) + len(PROXY_RULES) + 2
+          print(f"\nDone! Total rules: {total:,}, Size: {file_size / 1024 / 1024:.2f} MB")
+          PYEOF
+
+      - name: Check for changes
+        id: git-check
+        run: |
+          git diff --quiet adblockplus.conf || echo "changes=true" >> $GITHUB_OUTPUT
+
+      - name: Commit and push if changed
+        if: steps.git-check.outputs.changes == 'true'
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add adblockplus.conf
+          git commit -m "更新规则: $(date +'%Y-%m-%d %H:%M')"
+          git push origin main
+
+      - name: Cleanup
+        run: |
+          rm -f adblockclash_latest.list
