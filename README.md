@@ -6,9 +6,9 @@
 
 ### AdBlock Plus 规则（`adblockplus.conf`）
 
-- **🔄 自动更新**：GitHub Actions 每天北京时间 06:30 自动同步最新规则
-- **🚫 广告拦截**：约 258,718 条广告域名拦截规则（含 YouTube 相关域名拦截）
-- **🌍 国内外分流**：Telegram、Disney、Amazon、Apple 等国外服务走代理
+- **🔄 自动更新**：GitHub Actions 每天北京时间 06:00 自动同步最新规则
+- **🚫 广告拦截**：约 17,203 条广告域名拦截规则（含 YouTube 相关域名拦截）
+- **🌍 国内外分流**：Google、YouTube、GitHub、Twitter、Telegram、Disney、Amazon、Apple 等国外服务走代理
 
 **订阅 URL**：
 ```
@@ -19,9 +19,9 @@ https://raw.githubusercontent.com/tkgeeked/adblock-rule-plus/main/adblockplus.co
 
 | 规则类型 | 数量 | 来源 |
 |---------|------|------|
-| 广告拦截 | ~258,718 条 | [217heidai/adblockfilters](https://github.com/217heidai/adblockfilters) |
-| 国内外分流 | ~411 条 | Telegram、Disney、Amazon、Apple 等 |
-| IP/CIDR 规则 | 17 条 | Telegram、Google Voice 等 |
+| 广告拦截 | ~17,203 条 | [217heidai/adblockfilters](https://github.com/217heidai/adblockfilters) |
+| 国内外分流 | ~443 条 | Google、YouTube、GitHub、Twitter、Telegram、Disney、Amazon、Apple 等 |
+| IP/CIDR 规则 | 20 条 | 局域网、Telegram、WhatsApp、Google Voice 等 |
 | GEOIP 规则 | 1 条 | 中国IP直连 |
 
 ## YouTube 去广告说明
@@ -58,18 +58,19 @@ https://raw.githubusercontent.com/tkgeeked/adblock-rule-plus/main/adblockplus.co
 
 ### AdBlock Plus
 
-1. **国内直连优先**（.cn 域名、微信、银联、网银、苹果国内 CDN 及常用 App 等） → 直连（DIRECT，优先匹配）
-2. **广告域名** → 直接拦截（REJECT-DROP）
-3. **国外服务**（Telegram、Disney、Amazon、部分 Apple 国外服务等） → 走代理（PROXY）
-4. **中国 IP** → 直连（GEOIP,CN,DIRECT）
-5. **其他所有** → 走代理（FINAL,PROXY）
+1. **局域网直连**（本地 localhost、私有 IP 网段等） → 直连（DIRECT）
+2. **广告域名**（含移动主力广告联盟与 YouTube 相关域名） → 直接拦截（REJECT-DROP）
+3. **国外服务**（Google、YouTube、GitHub、Twitter、OpenAI、Claude、Telegram、Disney、Amazon 等） → 走代理（PROXY）
+4. **国内直连**（.cn 域名、微信、银联、网银、苹果国内 CDN 及常用 App 等） → 直连（DIRECT）
+5. **中国 IP** → 直连（GEOIP,CN,DIRECT）
+6. **其他所有** → 走代理（FINAL,PROXY）
 
 ## 自动更新
 
 规则会**每天自动更新**，无需手动操作：
 
 ### AdBlock Plus
-- **更新时间**：每天北京时间 06:30
+- **更新时间**：每天北京时间 06:00
 - **更新来源**：[217heidai/adblockfilters](https://github.com/217heidai/adblockfilters)
 
 如果你想**立即更新规则**：
@@ -87,25 +88,30 @@ https://raw.githubusercontent.com/tkgeeked/adblock-rule-plus/main/adblockplus.co
 
 ```ini
 [General]
+ipv6 = false
 bypass-system = true
-skip-proxy = 192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12, localhost, *.local, captive.apple.com, e.crashlytics.com
+skip-proxy = 127.0.0.1, 192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12, 100.64.0.0/10, localhost, *.local, *.lan, *.internal, fe80::/10, fc00::/7, captive.apple.com, sequoia.apple.com, seed-sequoia.siri.apple.com, *.ls.apple.com, e.crashlytics.com
 bypass-tun = 10.0.0.0/8,100.64.0.0/10,127.0.0.0/8,169.254.0.0/16,172.16.0.0/12,192.0.0.0/24,192.0.2.0/24,192.88.99.0/24,192.168.0.0/16,198.18.0.0/15,198.51.100.0/24,203.0.113.0/24,224.0.0.0/4,255.255.255.255/32
 dns-server = 223.5.5.5, 119.29.29.29, system
 update-url = https://raw.githubusercontent.com/tkgeeked/adblock-rule-plus/main/adblockplus.conf
 
 [Rule]
-# 国内直连优先匹配（微信、网银、国内加速服务等）
-DOMAIN-SUFFIX,cn,DIRECT
-DOMAIN-SUFFIX,unionpay.com,DIRECT
-DOMAIN-SUFFIX,apple.com,DIRECT
+# 局域网直连
+IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
 
 # 广告拦截（含 YouTube 相关域名）
 DOMAIN-SUFFIX,ads.youtube.com,REJECT-DROP
 DOMAIN-SUFFIX,doubleclick.net,REJECT-DROP
 
 # 国外服务代理
+DOMAIN-SUFFIX,google.com,PROXY
 DOMAIN-SUFFIX,telegram.org,PROXY
-IP-CIDR,91.108.56.0/22,PROXY
+IP-CIDR,91.108.56.0/22,PROXY,no-resolve
+
+# 国内直连
+DOMAIN-SUFFIX,cn,DIRECT
+DOMAIN-SUFFIX,unionpay.com,DIRECT
+DOMAIN-SUFFIX,apple.com,DIRECT
 
 # GEOIP 兜底与 FINAL
 GEOIP,CN,DIRECT
@@ -122,14 +128,14 @@ hostname = *.google.cn,*.googlevideo.com
 
 ### AdBlock Plus
 - **规则格式**：Shadowrocket
-- **自动更新**：✅ 是（每日 06:30 北京时间）
-- **规则总数**：约 259,130 条
-- **文件大小**：约 11.45 MB
+- **自动更新**：✅ 是（每日 06:00 北京时间）
+- **规则总数**：约 17,674 条
+- **文件大小**：约 0.81 MB
 
 ## 注意事项
 
 - 本规则**专为 Shadowrocket 设计**，不适用于 Clash 等其他客户端
-- 规则数量较多，可能对设备性能有一定影响
+- 规则数量适中，兼顾拦截效果与设备性能
 - 部分网站可能需要手动调整规则以确保正常访问
 - 如果导入后无法访问某些网站，请检查规则是否加载成功
 - **YouTube APP 内的视频广告无法通过域名规则拦截**，这是 YouTube 的技术限制
